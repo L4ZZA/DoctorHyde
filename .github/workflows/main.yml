@@ -32,13 +32,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           lfs: true
-
-      - name: Current folder path
-        run: pwd
-
-      - name: Directory content before build
-        run: ls -al
 
       - uses: actions/cache@v3
         with:
@@ -48,8 +43,11 @@ jobs:
             Library-${{ matrix.targetPlatform }}
             Library-
 
-      - name: Version from env.variable
-        run: echo "${{ env.UNITY_VERSION }}"
+      - name: Current folder path
+        run: pwd
+
+      - name: Directory content before build
+        run: ls -al
 
       - name: Directory content before build
         run: ls -al
@@ -62,15 +60,23 @@ jobs:
       # https://github.com/game-ci/unity-builder/releases/
       - name: Building game
         uses: game-ci/unity-builder@v4
+        id: myBuildStep
         with:
           # Platform that the build should target.
           targetPlatform: ${{ matrix.targetPlatform }}
           # Path where the builds should be stored.
           buildsPath: ${{ env.BUILD_OUTPUT_PATH}}
           buildName: ${{ env.BUILD_NAME}}
+          versioning: Semantic
           # Custom parameters to configure the build.
           # Parameters must start with a hyphen (-) and may be followed by a value (without hyphen). Parameters without a value will be considered booleans (with a value of true).
           # customParameters: '-nographics' # <--- This is the important bit [https://github.com/webbertakken/unity-builder/issues/153]
+
+      - name: Project Version
+        run: echo 'Project Version: ${{ steps.myBuildStep.outputs.buildVersion }}'
+
+      - name: Setting Artifact name env variable
+        run: echo "BUILD_ARTIFACT_NAME=${{ matrix.targetPlatform }}-${{ steps.myBuildStep.outputs.buildVersion }}.$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
 
       - name: Directory content after build
         run: ls -al
@@ -79,6 +85,13 @@ jobs:
         run: |
           sudo apt-get install tree
           tree ${{ env.BUILD_OUTPUT_PATH }}
+          
+      # Output
+      - name: Archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.BUILD_ARTIFACT_NAME }}
+          path: ${{ env.BUILD_OUTPUT_PATH }}/${{ matrix.targetPlatform }}
           
       # Output
       - name: Archive
