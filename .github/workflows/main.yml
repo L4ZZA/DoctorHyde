@@ -67,6 +67,9 @@ jobs:
           sudo apt-get install tree
           tree .
 
+      - name: Updating BUILD_NAME env variable
+        run: echo "BUILD_NAME=${{ env.BUILD_NAME }}_v${{ env.BUILD_VERSION }}" >> $GITHUB_ENV
+
       # https://github.com/game-ci/unity-builder/releases/
       - name: Building game
         uses: game-ci/unity-builder@v4
@@ -126,7 +129,7 @@ jobs:
       - name: Download Build
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.unity_build.outputs.buildArtifact }}
+          name: ${{ needs.build.outputs.buildArtifact }}
           path: ${{ env.BUILD_OUTPUT_PATH }}/${{ matrix.targetPlatform }}
 
       # https://github.com/marketplace/actions/butler-push
@@ -156,7 +159,7 @@ jobs:
       - name: Download Build
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.unity_build.outputs.buildArtifact }}
+          name: ${{ needs.build.outputs.buildArtifact }}
           path: ${{ env.BUILD_OUTPUT_PATH }}/${{ matrix.targetPlatform }}
       
       ## manual butler setup [alternative]
