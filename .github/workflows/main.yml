@@ -73,7 +73,7 @@ jobs:
           # customParameters: '-nographics' # <--- This is the important bit [https://github.com/webbertakken/unity-builder/issues/153]
 
       - name: Project Version
-        run: echo 'Project Version: ${{ steps.myBuildStep.outputs.buildVersion }}'
+        run: "echo Project Version: ${{ steps.myBuildStep.outputs.buildVersion }}"
 
       - name: Setting Artifact name env variable
         run: echo "BUILD_ARTIFACT_NAME=${{ matrix.targetPlatform }}-${{ steps.myBuildStep.outputs.buildVersion }}.$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
