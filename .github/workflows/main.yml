@@ -106,18 +106,15 @@ jobs:
 
   butler_html_push:
     name: Push WebGL Build to Itch.io
-    needs: [unity_build]
+    needs: [build]
     runs-on: ubuntu-latest
     strategy:
       # fail-fast: false
       matrix:
         targetPlatform:
-          - StandaloneWindows64
-          - StandaloneOSX
           - WebGL
         butlerChannel:
           - html5
-          - windows
 
     steps:
       - name: Download Build
@@ -138,7 +135,7 @@ jobs:
 
   butler_windows_push:
     name: Push Windows Build to Itch.io
-    needs: [unity_build]
+    needs: [build]
     runs-on: ubuntu-latest
     strategy:
       # fail-fast: false
