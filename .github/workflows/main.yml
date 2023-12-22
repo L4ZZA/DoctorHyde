@@ -14,6 +14,14 @@ env:
   UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
   UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
   BUILD_OUTPUT_PATH: build
+  # .................
+  BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+  # name found from the itchio project's url 
+  ITCHIO_GAME: doctor-hyde 
+  BUILD_NAME: DoctorHyde
+  RELEASE_NAME: Doctor Hyde
+  # Uncomment for manual setup
+  # BUTLER_PATH: ./butler_folder
 
 jobs:
 
@@ -25,8 +33,8 @@ jobs:
       matrix:
         targetPlatform:
           - StandaloneWindows64
-          - WebGL
           - StandaloneOSX
+          - WebGL
           # - Android
           # - iOs
     steps:
@@ -38,7 +46,7 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: Library/
-          key: Library-${{ matrix.projectPath }}-${{ matrix.targetPlatform }}
+          key: Library-${{ matrix.targetPlatform }}
           restore-keys: |
             Library-${{ matrix.targetPlatform }}
             Library-
@@ -75,8 +83,11 @@ jobs:
       - name: Project Version
         run: "echo Project Version: ${{ steps.myBuildStep.outputs.buildVersion }}"
 
+      - name: Updating BUILD_NAME env variable
+        run: echo "BUILD_NAME=${{ env.BUILD_NAME }}_v${{ steps.myBuildStep.outputs.buildVersion }}-$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
+
       - name: Setting Artifact name env variable
-        run: echo "BUILD_ARTIFACT_NAME=${{ matrix.targetPlatform }}-${{ steps.myBuildStep.outputs.buildVersion }}.$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
+        run: echo "BUILD_ARTIFACT_NAME=${{ matrix.targetPlatform }}_v${{ steps.myBuildStep.outputs.buildVersion }}.$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
 
       - name: Directory content after build
         run: ls -al
@@ -92,10 +103,95 @@ jobs:
         with:
           name: ${{ env.BUILD_ARTIFACT_NAME }}
           path: ${{ env.BUILD_OUTPUT_PATH }}/${{ matrix.targetPlatform }}
-          
-      # Output
-      - name: Archive
-        uses: actions/upload-artifact@v3
+
+  butler_html_push:
+    name: Push WebGL Build to Itch.io
+    needs: [unity_build]
+    runs-on: ubuntu-latest
+    strategy:
+      # fail-fast: false
+      matrix:
+        targetPlatform:
+          - StandaloneWindows64
+          - StandaloneOSX
+          - WebGL
+        butlerChannel:
+          - html5
+          - windows
+
+    steps:
+      - name: Download Build
+        uses: actions/download-artifact@v2
         with:
-          name: ${{ env.BUILD_ARTIFACT_NAME }}
+          name: ${{ needs.unity_build.outputs.buildArtifact }}
           path: ${{ env.BUILD_OUTPUT_PATH }}/${{ matrix.targetPlatform }}
+
+      # https://github.com/marketplace/actions/butler-push
+      - name: Butler Push
+        uses: yeslayla/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ env.BUTLER_API_KEY }}
+          CHANNEL: ${{ matrix.butlerChannel }}
+          ITCH_GAME: ${{ env.ITCHIO_GAME }}
+          ITCH_USER: ${{ env.ITCHIO_USER }}
+          PACKAGE: build/${{ matrix.targetPlatform }}
+
+  butler_windows_push:
+    name: Push Windows Build to Itch.io
+    needs: [unity_build]
+    runs-on: ubuntu-latest
+    strategy:
+      # fail-fast: false
+      matrix:
+        targetPlatform:
+          - StandaloneWindows64
+        butlerChannel:
+          - windows
+
+    steps:
+      - name: Download Build
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ needs.unity_build.outputs.buildArtifact }}
+          path: ${{ env.BUILD_OUTPUT_PATH }}/${{ matrix.targetPlatform }}
+      
+      ## manual butler setup [alternative]
+
+      # - name: Butler download
+      #   run: |
+      #     # -L follows redirects
+      #     # -O specifies output name
+      #     # -s hides all errors and the progress bar
+      #     # -S tells curl to be silent, except when there is an error
+      #     curl -S -s -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
+
+      # - name: Butler Unzip
+      #   run: unzip butler.zip -d ${{ env.BUTLER_PATH }}
+
+      # - name: Make Butler executable
+      #   # GNU unzip tends to not set the executable bit even though it's set in the .zip
+      #   # mark extracted file as executable
+      #   run: chmod +x ${{ env.BUTLER_PATH }}/butler
+
+      # - name: Butler test run
+      #   # just a sanity check run (and also helpful in case you're sharing CI logs)
+      #   run: ${{ env.BUTLER_PATH }}/butler -V
+
+      # - name: Butler login
+      #   # just a sanity check run (and also helpful in case you're sharing CI logs)
+      #   run: ${{ env.BUTLER_PATH }}/butler login
+
+      # - name: Directory content after Butler Download
+      #   run: tree
+      
+      # https://github.com/marketplace/actions/butler-push
+      - name: Butler Push
+        uses: josephbmanley/butler-publish-itchio-action@master
+        # uses: yeslayla/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ env.BUTLER_API_KEY }}
+          CHANNEL: ${{ matrix.butlerChannel }}
+          ITCH_GAME: ${{ env.ITCHIO_GAME }}
+          ITCH_USER: ${{ env.ITCHIO_USER }}
+          PACKAGE: build/${{ matrix.targetPlatform }}
+
