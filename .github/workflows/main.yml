@@ -13,7 +13,6 @@ env:
   UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
   UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
   UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-  PROJECT_PATH: .
 
 jobs:
 
@@ -31,8 +30,14 @@ jobs:
           # - iOs
     steps:
       - uses: actions/checkout@v4
-        # with:
-        #   lfs: true
+        with:
+          lfs: true
+
+      - name: Current folder path
+        run: pwd
+
+      - name: Directory content before build
+        run: ls -al
 
       - name: Unity - Return License
         uses: game-ci/unity-return-license@v2.0.0
@@ -44,16 +49,49 @@ jobs:
           restore-keys: |
             Library-${{ matrix.targetPlatform }}
             Library-
+          
+      - name: Get Unity Version
+        uses: Appegy/unity-version-action@v1
+
+      - name: Version from env.variable
+        run: echo "${{ env.UNITY_VERSION }}"
+
+      - name: Directory content before build
+        run: ls -al
+        
+      - name: Tree structure
+        run: |
+          sudo apt-get install tree
+          tree ${{ env.BUILD_OUTPUT_PATH }}
 
       # https://github.com/game-ci/unity-builder/releases/
-      - uses: game-ci/unity-builder@v4
+      - name: Building game
+        uses: game-ci/unity-builder@v4
         with:
-          projectPath: ${{ env.PROJECT_PATH }}
           targetPlatform: ${{ matrix.targetPlatform }}
+          # Path where the builds should be stored.
+          buildsPath: ${{ env.BUILD_OUTPUT_PATH}}
+          buildName: ${{ env.BUILD_NAME}}
+          # Platform that the build should target.
+          targetPlatform: ${{ matrix.targetPlatform }}
+          # Custom parameters to configure the build.
+          # Parameters must start with a hyphen (-) and may be followed by a value (without hyphen). Parameters without a value will be considered booleans (with a value of true).
+          # customParameters: '-nographics' # <--- This is the important bit [https://github.com/webbertakken/unity-builder/issues/153]
+
+      - name: Directory content after build
+        run: ls -al
+
+      - name: Tree structure
+        run: |
+          sudo apt-get install tree
+          tree ${{ env.BUILD_OUTPUT_PATH }}
 
       - name: Unity - Return License
         uses: game-ci/unity-return-license@v2.0.0
           
-      - uses: actions/upload-artifact@v3
+      # Output
+      - name: Archive
+        uses: actions/upload-artifact@v3
         with:
-          name: Build-${{ matrix.targetPlatform }}
+          name: ${{ env.BUILD_ARTIFACT_NAME }}
+          path: ${{ env.BUILD_OUTPUT_PATH }}/${{ matrix.targetPlatform }}
