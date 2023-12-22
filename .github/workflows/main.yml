@@ -113,7 +113,6 @@ jobs:
     name: Push WebGL Build to Itch.io
     needs: [build]
     runs-on: ubuntu-latest
-    env:
 
     strategy:
       # fail-fast: false
