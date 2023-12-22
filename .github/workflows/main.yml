@@ -113,80 +113,42 @@ jobs:
     name: Push WebGL Build to Itch.io
     needs: [build]
     runs-on: ubuntu-latest
-
-    strategy:
-      # fail-fast: false
-      matrix:
-        targetPlatform:
-          - WebGL
-        butlerChannel:
-          - html5
+    env:
+      targetPlatform: WebGL
+      butlerChannel: html5
 
     steps:
       - name: Download Build
         uses: actions/download-artifact@v3
         with:
           name: ${{ needs.build.outputs.buildArtifact }}
-          path: ${{ env.BUILD_OUTPUT_PATH }}/${{ matrix.targetPlatform }}
+          path: ${{ env.BUILD_OUTPUT_PATH }}/${{ env.targetPlatform }}
 
       # https://github.com/marketplace/actions/butler-push
       - name: Butler Push
         uses: yeslayla/butler-publish-itchio-action@master
         env:
           BUTLER_CREDENTIALS: ${{ env.BUTLER_API_KEY }}
-          CHANNEL: ${{ matrix.butlerChannel }}
+          CHANNEL: ${{ env.butlerChannel }}
           ITCH_GAME: ${{ env.ITCHIO_GAME }}
           ITCH_USER: ${{ env.ITCHIO_USER }}
           VERSION: ${{ env.BUILD_VERSION }}
-          PACKAGE: build/${{ matrix.targetPlatform }}
+          PACKAGE: build/${{ env.targetPlatform }}
 
   butler_windows_push:
     name: Push Windows Build to Itch.io
     needs: [build]
     runs-on: ubuntu-latest
-    strategy:
-      # fail-fast: false
-      matrix:
-        targetPlatform:
-          - StandaloneWindows64
-        butlerChannel:
-          - windows
+    env:
+      targetPlatform: StandaloneWindows64
+      butlerChannel: windows
 
     steps:
       - name: Download Build
         uses: actions/download-artifact@v3
         with:
           name: ${{ needs.build.outputs.buildArtifact }}
-          path: ${{ env.BUILD_OUTPUT_PATH }}/${{ matrix.targetPlatform }}
-      
-      ## manual butler setup [alternative]
-
-      # - name: Butler download
-      #   run: |
-      #     # -L follows redirects
-      #     # -O specifies output name
-      #     # -s hides all errors and the progress bar
-      #     # -S tells curl to be silent, except when there is an error
-      #     curl -S -s -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
-
-      # - name: Butler Unzip
-      #   run: unzip butler.zip -d ${{ env.BUTLER_PATH }}
-
-      # - name: Make Butler executable
-      #   # GNU unzip tends to not set the executable bit even though it's set in the .zip
-      #   # mark extracted file as executable
-      #   run: chmod +x ${{ env.BUTLER_PATH }}/butler
-
-      # - name: Butler test run
-      #   # just a sanity check run (and also helpful in case you're sharing CI logs)
-      #   run: ${{ env.BUTLER_PATH }}/butler -V
-
-      # - name: Butler login
-      #   # just a sanity check run (and also helpful in case you're sharing CI logs)
-      #   run: ${{ env.BUTLER_PATH }}/butler login
-
-      # - name: Directory content after Butler Download
-      #   run: tree
+          path: ${{ env.BUILD_OUTPUT_PATH }}/${{ env.targetPlatform }}
       
       # https://github.com/marketplace/actions/butler-push
       - name: Butler Push
@@ -194,9 +156,9 @@ jobs:
         # uses: yeslayla/butler-publish-itchio-action@master
         env:
           BUTLER_CREDENTIALS: ${{ env.BUTLER_API_KEY }}
-          CHANNEL: ${{ matrix.butlerChannel }}
+          CHANNEL: ${{ env.butlerChannel }}
           ITCH_GAME: ${{ env.ITCHIO_GAME }}
           ITCH_USER: ${{ env.ITCHIO_USER }}
           VERSION: ${{ env.BUILD_VERSION }}
-          PACKAGE: build/${{ matrix.targetPlatform }}
+          PACKAGE: build/${{ env.targetPlatform }}
 
