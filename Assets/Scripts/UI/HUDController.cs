@@ -295,10 +295,14 @@ public class HUDController : MonoBehaviour
 
     void SetFollowMouse(bool followMouse)
     {
-        var pivots = FindObjectsOfType(typeof(PivotRotation2D));
-        foreach(var p in pivots)
+        var pivots = FindObjectsByType<PivotRotation2D>(FindObjectsSortMode.None);
+        foreach(PivotRotation2D pivot in pivots)
         {
-            PivotRotation2D pivot = (PivotRotation2D)p;
+            if (pivot == null)
+            {
+                continue;
+            }
+
             var component = pivot.GetComponent<PivotRotation2D>();
             component.enabled = followMouse;
         }

@@ -16,8 +16,6 @@ public class SpawnController : MonoBehaviour
     [SerializeField] private float delayMin = 0.25f;
     [SerializeField] private float delayMax = 1f;
 
-    private bool currentlySpawning = false;
-
     public void Awake()
     {
         TurnOffSpawnSprites();
